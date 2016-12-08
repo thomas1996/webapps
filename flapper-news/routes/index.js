@@ -1,15 +1,17 @@
 var express = require('express');
+var passport = require('passport');
 var router = express.Router();
+
 var mongoose = require('mongoose');
 var Post = mongoose.model('Post');
 var Comment = mongoose.model('Comment');
-var passport = require('passport');
+
 var User = mongoose.model('User');
 var jwt = require('express-jwt');
 var auth = jwt({secret: 'SECRET', userProperty: 'payload'});
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', function(req, res) {
   res.render('index', { title: 'Express' });
 });
 
@@ -52,9 +54,13 @@ router.param('post',function(req,res,next,id){
   });
 });
 
-router.get('/posts/:post',function(req,res){
-  res.json(req.post);
-});
+router.get('/posts/:post',function(req,res,next){
+  req.post.populate('comments', function(err, post) {
+      if (err) { return next(err); }
+
+      return res.json(post);
+    });
+  });
 
 router.put('/posts/:post/upvote',auth,function(req,res,next){
   req.post.upvote(function(err,post){
@@ -78,6 +84,14 @@ router.post('/posts/:post/comments',auth,function(req,res,next){
 
       res.json(comment);
     });
+  });
+});
+
+router.put('/posts/:post/comments/:comment/upvote', auth, function(req, res, next) {
+  req.comment.upvote(function(err, comment){
+    if (err) { return next(err); }
+
+    res.json(comment);
   });
 });
 
@@ -106,7 +120,7 @@ router.param('comment',function(req,res,next,id){
     }
     if(!comment)
     {
-      return next(new Error('can\'t find menu'));
+      return next(new Error('can\'t find comment'));
     }
     req.comment = comment;
     return next();
@@ -145,8 +159,5 @@ router.post('/login',function(req,res,next){
       }
     })(req,res,next);
   });
-
-
-
 
 module.exports = router;
