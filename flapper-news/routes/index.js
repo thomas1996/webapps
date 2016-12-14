@@ -88,19 +88,24 @@ router.post('/posts/:post/comments',auth,function(req,res,next){
 });
 
 router.put('/posts/:post/comments/:comment/upvote', auth, function(req, res, next) {
+  console.log(req.post + ' ' + req.comment);
   req.comment.upvote(function(err, comment){
-    if (err) { return next(err); }
+    if (err) {
+      console.log(err);
+       return next(err); }
 
     res.json(comment);
   });
 });
-
+/*
 router.post('posts/:post/comments/:comment/upvote',auth,function(req,res,next){
 var comment = new Comment(req.body);
 comment.upvote = req.post;
 
 comment.save(function(err,comment){
-  if(err){return next(err);}
+  if(err){
+
+    return next(err);}
 
   req.comment.upvotes.push(comment);
   req.comment.save(function(err,comment){
@@ -110,7 +115,7 @@ comment.save(function(err,comment){
   });
 });
 });
-
+*/
 router.param('comment',function(req,res,next,id){
   var query = Comment.findById(id);
 
@@ -133,18 +138,18 @@ router.post('/register',function(req,res,next){
   if(!req.body.username || !req.body.password){
     return res.statur(400).json({message: 'please fill out all fields'});
   }
-  console.log(req.body);
+
   var user = new User();
   user.username = req.body.username;
   user.setPassword(req.body.password);
 
   user.save(function(err){
     if(err) {
-      console.log(err);
+
       return next(err);
     }
 
-    console.log(user.generateJWT());
+
     return res.json({token: user.generateJWT()})
   });
 });
