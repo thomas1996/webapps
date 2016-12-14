@@ -30,7 +30,7 @@ router.get('/posts/:post',function(req,res,next){
         res.json(post);
     });
 });
-//post
+//create new post
 router.post('/posts',auth,function(req,res,next){
     var post = new Post(req.body);
     post.author = req.payload.username;
@@ -41,7 +41,7 @@ router.post('/posts',auth,function(req,res,next){
     });
 });
 
-
+//map to route parameter 'post'
 router.param('post',function(req,res,next,id){
     var query = Post.findById(id);
     query.exec(function(err,post){
@@ -53,7 +53,7 @@ router.param('post',function(req,res,next,id){
         return next();
     });
 });
-
+//get one single post
 router.get('/posts/:post',function(req,res,next){
     req.post.populate('comments', function(err, post) {
         if (err) { return next(err); }
@@ -61,16 +61,40 @@ router.get('/posts/:post',function(req,res,next){
         return res.json(post);
     });
 });
+//delete post
+router.delete('/posts/:post',function(req,res){
+    console.log("hallo");
+    req.post.comments.forEach(function(id){
+        Console.log("hallo");
+        Comment.remove({
+            _id:id
+        },function(err){
+            if(err)
+            {return next(err);}
+        });
+    })
+    Post.remove({
+        _id:req.params.post
+    },function(err,post){
+        if(err)
+        {return next(err);}
 
+        //get and return all the remaining posts
+        Post.find(function(err,posts){
+            if(err){return next(err);}
+
+            res.json(posts);
+        });
+    });
+});
+//upvote post
 router.put('/posts/:post/upvote',auth,function(req,res,next){
     req.post.upvote(function(err,post){
-        if(err){
-            console.log(err);
-            return next(err);}
+        if(err){return next(err);}
         res.json(post);
     });
 });
-
+//downvote post
 router.put('/posts/:post/downvote',auth,function(req,res,next){
     req.post.downvote(function(err,post){
         if(err){return next(err);}
@@ -79,7 +103,7 @@ router.put('/posts/:post/downvote',auth,function(req,res,next){
     });
 });
 
-//comments
+//post comments
 router.post('/posts/:post/comments',auth,function(req,res,next){
     var comment = new Comment(req.body);
     comment.post = req.post;
@@ -96,7 +120,7 @@ router.post('/posts/:post/comments',auth,function(req,res,next){
         });
     });
 });
-
+//upvote comment
 router.put('/posts/:post/comments/:comment/upvote', auth, function(req, res, next) {
     req.comment.upvote(function(err, comment){
         if (err) {
@@ -114,7 +138,7 @@ router.put('/posts/:post/commments/:comment/downvote',auth,function(req,res,next
         res.json(comment);
     });
 });
-
+//map to route parameter 'commment'
 router.param('comment',function(req,res,next,id){
     var query = Comment.findById(id);
 

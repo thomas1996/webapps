@@ -41,38 +41,29 @@ app.config([
                     $state.go('home');
                 }
             }]
-        }).state('logout',{
-            url: '/logout',
-            templateUrl: '/home.html',
-            controller: 'AuthCtrl',
-            onEnter: ['$state', 'auth', function($state, auth){
-                if(!auth.isLoggedIn()){
-                    $state.go('home');
-                }
-            }]
         });
         $urlRouterProvider.otherwise('home');
     }]);
 
-  app.factory('auth',['$http','$window',function($http,$window){
+app.factory('auth',['$http','$window',function($http,$window){
     var auth = {};
-  auth.saveToken = function(token){
-    $window.localStorage['flapper-news-token'] = token;
-  };
-  auth.getToken = function(){
-    return $window.localStorage['flapper-news-token'];
-  };
-  auth.isLoggedIn = function(){
-    var token = auth.getToken();
+    auth.saveToken = function(token){
+        $window.localStorage['flapper-news-token'] = token;
+    };
+    auth.getToken = function(){
+        return $window.localStorage['flapper-news-token'];
+    };
+    auth.isLoggedIn = function(){
+        var token = auth.getToken();
 
-    if(token){
-      var payload = JSON.parse($window.atob(token.split('.')[1]));
+        if(token){
+            var payload = JSON.parse($window.atob(token.split('.')[1]));
 
-      return payload.exp > Date.now() /1000;
-    }else{
-      return false;
-    }
-  };
+            return payload.exp > Date.now() /1000;
+        }else{
+            return false;
+        }
+    };
 
   auth.currentUser = function(){
     if(auth.isLoggedIn()){
@@ -117,7 +108,7 @@ app.controller('MainCtrl',[
                 return;}
 //check fot valid URL
             var url = $scope.link.length;
-            if($scope.link && url>0) {
+            if($scope.link && url==0) {
                 alert('You must include a valid url (ex: http://www.example.com');
                 return;
             }
@@ -129,6 +120,9 @@ app.controller('MainCtrl',[
             $scope.title = '';
             $scope.link = '';
         };
+        $scope.deletePost = function(post){
+            posts.delete(post);
+        };
 
         $scope.incrementUpvotes = function(post){
             posts.upvote(post);
@@ -136,8 +130,7 @@ app.controller('MainCtrl',[
         $scope.decrementUpvotes = function(post){
             posts.downvote(post);
         };
-    }
-]);
+    }]);
 
 app.controller('PostCtrl',[
     '$scope',
@@ -149,7 +142,7 @@ app.controller('PostCtrl',[
         $scope.post = post;
 
         $scope.addComment = function() {
-            if($scope.body === '') { return; }
+            if($scope.body === '') {alert('Title is required');return; }
             posts.addComment(post._id, {
                 body: $scope.body,
                 author: 'user',
@@ -190,13 +183,7 @@ app.controller('AuthCtrl',[
                 $state.go('home');
             });
         };
-        $scope.logOut = function(){
-            auth.logOut($scope.user).console.error(function(error){
-                $scope.error = error;
-            }).then(function(){
-                $state.go('home')
-            });
-        }
+
     }]);
 
 app.controller('NavCtrl',[
@@ -237,7 +224,7 @@ app.factory('posts',['$http','auth',function($http,auth){
 
     o.downvote = function(post)
     {
-        return $http.put('/posts/' + post._id + '/downvote',null,{
+        return $http.put('/posts/' + post._id + '/downvote',{
             headers: {Authorization: 'Bearer' + auth.getToken()}
         }).success(function(data) {
             post.votes -= 1;
@@ -249,6 +236,12 @@ app.factory('posts',['$http','auth',function($http,auth){
             return res.data;
         });
     };
+
+    o.delete = function(post) {
+        return $http.delete('/posts/' + post._id).success(function(data) {
+            angular.copy(data, o.posts);
+        });
+    };
     o.addComment = function(id,comment){
         return $http.post('/posts/' + id + '/comments', comment, {
             headers: {Authorization: 'Bearer ' + auth.getToken()}
@@ -256,14 +249,13 @@ app.factory('posts',['$http','auth',function($http,auth){
     };
 
     o.upvoteComment = function(post, comment) {
-        return $http.put('/posts/' + post._id + '/comments/'+ comment._id + '/upvote', null, {
-            headers: {Authorization: 'Bearer '+auth.getToken()}
-        }).success(function(data){
+        return $http.put('/posts/' + post._id + '/comments/'+ comment._id + '/upvote',null
+        ).success(function(data){
             comment.upvotes += 1;
         });
     };
     o.downvoteComment = function(post,comment){
-        return $http.put('/posts/' + post._id + '/comments/'+ comment._id + '/downvote', null, {
+        return $http.put('/posts/' + post._id + '/comments/'+ comment._id + '/downvote',{
             headers: {Authorization: 'Bearer '+auth.getToken()}
         }).success(function(data){
             comment.upvotes -= 1;
