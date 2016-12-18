@@ -19,9 +19,13 @@
     "passport-local": "^1.0.0",
     "serve-favicon": "~2.3.0"
   },
-  "buildpacks":[
+  "buildpacks": [
     {
-      "url":"https://github.com/heroku/heroku-buildpack-nodejs"
+      "url": "https://github.com/heroku/heroku-buildpack-nodejs"
     }
-  ]
+  ],
+
+"engines":{
+  "node": "4.5.0"
+}
 }
